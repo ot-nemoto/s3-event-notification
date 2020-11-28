@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: s3-event-notification-s3bucket
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      NotificationConfiguration:
+        TopicConfigurations:
+        - Topic: !Ref SnsTopic
+          Event: 's3:ObjectCreated:*'
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+  SnsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: SnsTopicPolicy
+          Effect: Allow
+          Principal:
+            Service: s3.amazonaws.com
+          Action:
+          - sns:Publish
+          Resource: !Ref SnsTopic
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub arn:aws:s3:::${BucketName}
+      Topics:
+      - !Ref SnsTopic
+
+Outputs:
+  S3Bucket:
+    Value: !Sub https://s3.console.aws.amazon.com/s3/buckets/${BucketName}?region=${AWS::Region}
+  SnsTopic:
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/sns/v3/home?region=${AWS::Region}#/topic/${SnsTopic}
